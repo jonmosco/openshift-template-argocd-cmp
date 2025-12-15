@@ -13,7 +13,7 @@ parameters:
     required: true
   - name: REPLICAS
     description: Number of replicas
-    value: "1"
+    value: 1
   - name: IMAGE_TAG
     description: Image tag to use
     value: "latest"

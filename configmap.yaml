@@ -72,7 +72,40 @@ data:
             # --ignore-unknown-parameters: ignores parameters passed here that don't exist in template
             # Template default values: oc process automatically uses default values from template
             # Required parameters: oc process will fail if required params are missing (correct behavior)
-            oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml
+            # Post-process YAML to convert string numbers to integers for fields that require them
+            # This fixes the issue where template parameters (strings) are substituted into integer fields
+            oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml | \
+            python3 -c "
+import sys
+import yaml
+import json
+
+def fix_numeric_strings(obj):
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key in ['replicas', 'port', 'targetPort', 'containerPort'] and isinstance(value, str) and value.isdigit():
+                obj[key] = int(value)
+            else:
+                fix_numeric_strings(value)
+    elif isinstance(obj, list):
+        for item in obj:
+            fix_numeric_strings(item)
+    return obj
+
+try:
+    docs = []
+    for doc in yaml.safe_load_all(sys.stdin):
+        if doc:
+            docs.append(fix_numeric_strings(doc))
+    for doc in docs:
+        print('---')
+        print(yaml.dump(doc, default_flow_style=False, allow_unicode=True), end='')
+except Exception as e:
+    # Fallback to original output if Python/YAML processing fails
+    sys.stdin.seek(0)
+    sys.stdout.write(sys.stdin.read())
+    sys.stderr.write(f'Warning: YAML post-processing failed: {e}\n')
+"
       discover:
         find:
           glob: "**/template.yaml"
