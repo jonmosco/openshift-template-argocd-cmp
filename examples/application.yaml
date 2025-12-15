@@ -7,13 +7,12 @@ spec:
   project: default
   
   source:
-    # Update this to point to your repository
     repoURL: https://github.com/jonmosco/openshift-template-argocd-cmp
     targetRevision: main
     path: examples/openshift
     
     plugin:
-      name: openshift-template-processor-simple
+      name: openshift-template-processor-simple-v1.0
       # Only provide required parameters - others will use template defaults
       parameters:
         - name: APP_NAME

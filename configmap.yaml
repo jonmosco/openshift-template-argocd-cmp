@@ -19,16 +19,25 @@ data:
             set -e
             
             # Find OpenShift template files
-            # Look for templates in openshift/ directory or root template files
+            # Check current directory first, then look for openshift/ subdirectory
             TEMPLATE_FILE=""
-            if [ -d "./openshift" ]; then
+            # First, check for template.yaml/template.yml in current directory
+            if [ -f "./template.yaml" ]; then
+              TEMPLATE_FILE="./template.yaml"
+            elif [ -f "./template.yml" ]; then
+              TEMPLATE_FILE="./template.yml"
+            fi
+            # If not found, check for any YAML file with Template kind in current directory
+            if [ -z "$TEMPLATE_FILE" ]; then
+              TEMPLATE_FILE=$(find . -maxdepth 1 -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
+            fi
+            # If still not found, check for openshift/ subdirectory
+            if [ -z "$TEMPLATE_FILE" ] && [ -d "./openshift" ]; then
               TEMPLATE_FILE=$(find ./openshift -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -1)
             fi
+            # Last resort: search more broadly
             if [ -z "$TEMPLATE_FILE" ]; then
-              TEMPLATE_FILE=$(find . -maxdepth 2 -type f \( -name "template.yaml" -o -name "template.yml" \) 2>/dev/null | head -1)
-            fi
-            if [ -z "$TEMPLATE_FILE" ]; then
-              TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | xargs grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" 2>/dev/null | head -1)
+              TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
             fi
             
             if [ -z "$TEMPLATE_FILE" ]; then
@@ -59,10 +68,11 @@ data:
             done
             
             # Process template with oc
+            # --local: process template locally without cluster access (just generates YAML)
             # --ignore-unknown-parameters: ignores parameters passed here that don't exist in template
             # Template default values: oc process automatically uses default values from template
             # Required parameters: oc process will fail if required params are missing (correct behavior)
-            oc process --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS
+            oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml
       discover:
         find:
           glob: "**/template.yaml"

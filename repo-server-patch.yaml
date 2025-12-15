@@ -34,5 +34,9 @@ spec:
           name: openshift-template-processor-simple
         name: openshift-template-processor-simple-config
       - emptyDir: {}
+        name: plugins
+      - emptyDir: {}
+        name: var-files
+      - emptyDir: {}
         name: cmp-tmp
 
