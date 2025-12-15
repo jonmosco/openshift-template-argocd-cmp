@@ -1,0 +1,90 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: simple-app-template
+  annotations:
+    description: "A simple OpenShift template for testing the ArgoCD template processor plugin"
+parameters:
+  - name: APP_NAME
+    description: The name of the application
+    required: true
+  - name: APP_NAMESPACE
+    description: The namespace where the application will be deployed
+    required: true
+  - name: REPLICAS
+    description: Number of replicas
+    value: "1"
+  - name: IMAGE_TAG
+    description: Image tag to use
+    value: "latest"
+  - name: ENVIRONMENT
+    description: Environment name (dev, staging, prod)
+    value: "dev"
+objects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ${APP_NAME}-config
+      namespace: ${APP_NAMESPACE}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    data:
+      app_name: ${APP_NAME}
+      namespace: ${APP_NAMESPACE}
+      environment: ${ENVIRONMENT}
+      image_tag: ${IMAGE_TAG}
+      replicas: ${REPLICAS}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP_NAME}
+      namespace: ${APP_NAMESPACE}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      selector:
+        app: ${APP_NAME}
+      ports:
+        - protocol: TCP
+          port: 8080
+          targetPort: 8080
+      type: ClusterIP
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}
+      namespace: ${APP_NAMESPACE}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      replicas: ${REPLICAS}
+      selector:
+        matchLabels:
+          app: ${APP_NAME}
+      template:
+        metadata:
+          labels:
+            app: ${APP_NAME}
+            environment: ${ENVIRONMENT}
+        spec:
+          containers:
+            - name: ${APP_NAME}
+              image: quay.io/example/${APP_NAME}:${IMAGE_TAG}
+              ports:
+                - containerPort: 8080
+              env:
+                - name: APP_NAME
+                  value: ${APP_NAME}
+                - name: ENVIRONMENT
+                  value: ${ENVIRONMENT}
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+          volumes:
+            - name: config
+              configMap:
+                name: ${APP_NAME}-config
+

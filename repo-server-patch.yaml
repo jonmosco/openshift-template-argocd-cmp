@@ -12,6 +12,7 @@ spec:
           # Update this image to match your built image with the oc binary
           # Example: quay.io/yourorg/argocd-openshift-template-processor-simple:1.0
           image: argocd-openshift-template-processor-simple:1.0
+          imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: true
             runAsUser: 999

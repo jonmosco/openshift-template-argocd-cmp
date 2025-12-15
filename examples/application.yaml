@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: simple-app
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    # Update this to point to your repository
+    repoURL: https://github.com/jonmosco/openshift-template-argocd-cmp
+    targetRevision: main
+    path: examples/openshift
+    
+    plugin:
+      name: openshift-template-processor-simple
+      # Only provide required parameters - others will use template defaults
+      parameters:
+        - name: APP_NAME
+          string: simple-app
+        - name: APP_NAMESPACE
+          string: default
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+

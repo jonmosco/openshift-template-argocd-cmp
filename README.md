@@ -90,6 +90,9 @@ podman build \
   --build-arg OPENSHIFT_VERSION=4.15.0 \
   -t quay.io/myorg/argocd-openshift-template-processor-simple:1.0 \
   -f Dockerfile .
+
+# Load image into kind cluster (if using kind for local testing)
+kind load docker-image argocd-openshift-template-processor-simple:1.0 --name <cluster-name>
 ```
 
 ### Finding the Correct OpenShift Version
@@ -107,12 +110,12 @@ https://mirror.openshift.com/pub/openshift-v4/clients/ocp/
 
 1. Apply the ConfigMap containing the plugin definition:
    ```bash
-   kubectl apply -f configmap.yaml
+   oc apply -f configmap.yaml
    ```
 
 2. Patch the ArgoCD repo-server deployment to add the sidecar container:
    ```bash
-   kubectl patch deployment argocd-repo-server -n argocd --patch-file repo-server-patch.yaml
+   oc patch deployment argocd-repo-server -n argocd --patch-file repo-server-patch.yaml
    ```
 
 3. Update the `image` field in `repo-server-patch.yaml` to point to your built image.

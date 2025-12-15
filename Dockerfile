@@ -9,21 +9,21 @@ FROM ${BASE_IMAGE}
 
 # Install required packages
 RUN microdnf install -y \
-    curl \
     tar \
     gzip \
     && microdnf clean all
 
 # Set OpenShift version as build argument
 # Default to a recent stable version if not specified
-ARG OPENSHIFT_VERSION=4.15.0
+# Use format like "4.14.0", "4.15.1", or "stable-4.15" for stable branches
+ARG OPENSHIFT_VERSION=4.14.0
 
 # Download and install oc binary
 # The oc binary is available from the OpenShift client tools release
+# Reference: https://github.com/app-sre/container-images/blob/master/qontract-reconcile-oc/Dockerfile
 RUN OPENSHIFT_VERSION=${OPENSHIFT_VERSION} && \
-    ARCH=$(uname -m | sed 's/x86_64/amd64/') && \
-    echo "Downloading oc client for OpenShift ${OPENSHIFT_VERSION} (${ARCH})..." && \
-    curl -f -L "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_VERSION}/openshift-client-linux-${ARCH}.tar.gz" \
+    echo "Downloading oc client for OpenShift ${OPENSHIFT_VERSION}..." && \
+    curl -sfL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_VERSION}/openshift-client-linux.tar.gz" \
     -o /tmp/oc.tar.gz && \
     tar -xzf /tmp/oc.tar.gz -C /usr/local/bin oc && \
     chmod +x /usr/local/bin/oc && \
