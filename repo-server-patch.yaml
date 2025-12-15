@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      containers:
+        - name: openshift-template-processor-simple
+          command: [/var/run/argocd/argocd-cmp-server]
+          # Update this image to match your built image with the oc binary
+          # Example: quay.io/yourorg/argocd-openshift-template-processor-simple:1.0
+          image: argocd-openshift-template-processor-simple:1.0
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              subPath: plugin.yaml
+              name: openshift-template-processor-simple-config
+            # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps 
+            # mitigate path traversal attacks.
+            - mountPath: /tmp
+              name: cmp-tmp
+      volumes:
+      - configMap:
+          name: openshift-template-processor-simple
+        name: openshift-template-processor-simple-config
+      - emptyDir: {}
+        name: cmp-tmp
+

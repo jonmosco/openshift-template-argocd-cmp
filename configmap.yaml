@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openshift-template-processor-simple
+data:
+  plugin.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: openshift-template-processor-simple
+    spec:
+      version: v1.0
+      init:
+        command: [sh, -c, 'echo "Initializing OpenShift template processor..."']
+      generate:
+        command: [sh, -c]
+        args:
+          - |
+            set -e
+            
+            # Find OpenShift template files
+            # Look for templates in openshift/ directory or root template files
+            TEMPLATE_FILE=""
+            if [ -d "./openshift" ]; then
+              TEMPLATE_FILE=$(find ./openshift -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -1)
+            fi
+            if [ -z "$TEMPLATE_FILE" ]; then
+              TEMPLATE_FILE=$(find . -maxdepth 2 -type f \( -name "template.yaml" -o -name "template.yml" \) 2>/dev/null | head -1)
+            fi
+            if [ -z "$TEMPLATE_FILE" ]; then
+              TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | xargs grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" 2>/dev/null | head -1)
+            fi
+            
+            if [ -z "$TEMPLATE_FILE" ]; then
+              echo "Error: No OpenShift template files found. Looking for files in ./openshift/ or named template.yaml" >&2
+              exit 1
+            fi
+            
+            echo "Processing template: $TEMPLATE_FILE" >&2
+            
+            # Build parameter list from environment variables
+            # ArgoCD passes plugin.parameters as environment variables
+            # Note: oc process will automatically use default values from the template
+            # for any parameters not explicitly provided here
+            PARAMS=""
+            
+            # Include ArgoCD standard variables
+            [ -n "$ARGOCD_APP_NAME" ] && PARAMS="$PARAMS -p APP_NAME=$ARGOCD_APP_NAME"
+            [ -n "$ARGOCD_APP_NAMESPACE" ] && PARAMS="$PARAMS -p APP_NAMESPACE=$ARGOCD_APP_NAMESPACE"
+            
+            # Include plugin parameters from environment
+            # Look for variables that are likely template parameters (uppercase, not internal)
+            # Only pass non-empty values - oc process will use template defaults for missing params
+            for VAR in $(env | cut -d= -f1 | grep -E '^[A-Z][A-Z0-9_]*$' | grep -vE '^(ARGOCD_|PATH|HOME|USER|SHELL|PWD|SHLVL|_|APP_NAME|APP_NAMESPACE)$'); do
+              eval VALUE=\$$VAR
+              if [ -n "$VALUE" ]; then
+                PARAMS="$PARAMS -p $VAR=$VALUE"
+              fi
+            done
+            
+            # Process template with oc
+            # --ignore-unknown-parameters: ignores parameters passed here that don't exist in template
+            # Template default values: oc process automatically uses default values from template
+            # Required parameters: oc process will fail if required params are missing (correct behavior)
+            oc process --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS
+      discover:
+        find:
+          glob: "**/template.yaml"
+          command: [sh, -c, 'find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1']
+
