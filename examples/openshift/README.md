@@ -15,8 +15,9 @@ The template defines the following parameters:
 
 - **APP_NAME** (required): The name of the application
 - **APP_NAMESPACE** (required): The namespace where resources will be created
+- **IMAGE** (default: "nginx:latest"): Container image to use (e.g., "nginx:latest", "myapp:v1.0.0", or a local image for kind)
 - **REPLICAS** (default: "1"): Number of replicas for the deployment
-- **IMAGE_TAG** (default: "latest"): Image tag to use
+- **IMAGE_TAG** (default: "latest"): Image tag to use (deprecated, use IMAGE instead)
 - **ENVIRONMENT** (default: "dev"): Environment name
 
 ## Testing with ArgoCD
@@ -36,6 +37,7 @@ To use:
 ## Notes
 
 - `APP_NAME` and `APP_NAMESPACE` are required and will be automatically provided by ArgoCD
-- `REPLICAS`, `IMAGE_TAG`, and `ENVIRONMENT` have default values, so they're optional
+- `IMAGE`, `REPLICAS`, and `ENVIRONMENT` have default values, so they're optional
 - You can override any default values by providing them in `plugin.parameters`
+- For kind clusters, you can use a local image by setting `IMAGE` to your image name (e.g., `myapp:1.0`)
 

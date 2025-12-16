@@ -17,7 +17,7 @@ data:
         args:
           - |
             set -e
-            
+ 
             # Find OpenShift template files
             # Check current directory first, then look for openshift/ subdirectory
             TEMPLATE_FILE=""
@@ -39,24 +39,24 @@ data:
             if [ -z "$TEMPLATE_FILE" ]; then
               TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
             fi
-            
+
             if [ -z "$TEMPLATE_FILE" ]; then
               echo "Error: No OpenShift template files found. Looking for files in ./openshift/ or named template.yaml" >&2
               exit 1
             fi
-            
+
             echo "Processing template: $TEMPLATE_FILE" >&2
-            
+
             # Build parameter list from environment variables
             # ArgoCD passes plugin.parameters as environment variables
             # Note: oc process will automatically use default values from the template
             # for any parameters not explicitly provided here
             PARAMS=""
-            
+
             # Include ArgoCD standard variables
             [ -n "$ARGOCD_APP_NAME" ] && PARAMS="$PARAMS -p APP_NAME=$ARGOCD_APP_NAME"
             [ -n "$ARGOCD_APP_NAMESPACE" ] && PARAMS="$PARAMS -p APP_NAMESPACE=$ARGOCD_APP_NAMESPACE"
-            
+
             # Include plugin parameters from environment
             # Look for variables that are likely template parameters (uppercase, not internal)
             # Only pass non-empty values - oc process will use template defaults for missing params
@@ -66,14 +66,14 @@ data:
                 PARAMS="$PARAMS -p $VAR=$VALUE"
               fi
             done
-            
+
             # Process template with oc
             # --local: process template locally without cluster access (just generates YAML)
             # --ignore-unknown-parameters: ignores parameters passed here that don't exist in template
             # Template default values: oc process automatically uses default values from template
             # Required parameters: oc process will fail if required params are missing (correct behavior)
             # oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml
-            oc process --local -f "$TEMPLATE_FILE" $PARAMS -o yaml | sed 's/replicas: "\(.*\)"/replicas: \1/'
+            oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml | sed 's/replicas: "\(.*\)"/replicas: \1/'
 
       discover:
         find:

@@ -14,8 +14,11 @@ parameters:
   - name: REPLICAS
     description: Number of replicas
     value: "1"
+  - name: IMAGE
+    description: Container image to use
+    value: "nginx:latest"
   - name: IMAGE_TAG
-    description: Image tag to use
+    description: Image tag to use (deprecated, use IMAGE instead)
     value: "latest"
   - name: ENVIRONMENT
     description: Environment name (dev, staging, prod)
@@ -72,7 +75,7 @@ objects:
         spec:
           containers:
             - name: ${APP_NAME}
-              image: quay.io/example/${APP_NAME}:${IMAGE_TAG}
+              image: ${IMAGE}
               ports:
                 - containerPort: 8080
               env:
