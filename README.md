@@ -1,6 +1,6 @@
-# ArgoCD Configuration Management plugin for OpenShift Templates (Simple)
+# ArgoCD Configuration Management plugin for OpenShift Templates
 
-A simple ArgoCD Configuration Management Plugin for processing OpenShift templates. This plugin provides basic template rendering for standard OpenShift template files.
+An ArgoCD Configuration Management Plugin for processing OpenShift templates. This plugin provides basic template rendering for standard OpenShift template files.
 
 ## Overview
 
@@ -136,7 +136,7 @@ spec:
     repoURL: https://github.com/myorg/myrepo
     path: .
     plugin:
-      name: openshift-template-processor-simple
+      name: openshift-template-processor
       parameters:
         - name: MY_PARAM
           string: my-value
