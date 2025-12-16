@@ -35,7 +35,7 @@ data:
             if [ -z "$TEMPLATE_FILE" ] && [ -d "./openshift" ]; then
               TEMPLATE_FILE=$(find ./openshift -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -1)
             fi
-            # Last resort: search more broadly
+            # search more broadly
             if [ -z "$TEMPLATE_FILE" ]; then
               TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
             fi
@@ -72,11 +72,9 @@ data:
             # --ignore-unknown-parameters: ignores parameters passed here that don't exist in template
             # Template default values: oc process automatically uses default values from template
             # Required parameters: oc process will fail if required params are missing (correct behavior)
-            # oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml
             oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml | sed 's/replicas: "\(.*\)"/replicas: \1/'
 
       discover:
         find:
           glob: "**/template.yaml"
           command: [sh, -c, 'find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1']
-
