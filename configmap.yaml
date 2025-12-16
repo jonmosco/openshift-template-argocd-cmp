@@ -73,7 +73,8 @@ data:
             # Template default values: oc process automatically uses default values from template
             # Required parameters: oc process will fail if required params are missing (correct behavior)
             # oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml
-            oc process --local -f "$TEMPLATE_FILE" $PARAMS -o yaml
+            oc process --local -f "$TEMPLATE_FILE" $PARAMS -o yaml | sed 's/replicas: "\(.*\)"/replicas: \1/'
+
       discover:
         find:
           glob: "**/template.yaml"
