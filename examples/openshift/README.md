@@ -22,9 +22,10 @@ The template defines the following parameters:
 
 ## Testing with ArgoCD
 
-See example ArgoCD Application manifest in the parent `examples/` directory:
+See example ArgoCD Application manifests in the parent `examples/` directory:
 
-- **`application.yaml`** - Minimal example using only required parameters
+- **`application.yaml`** - Minimal example using only required parameters (local template)
+- **`application-remote.yaml`** - Example using a remote template from a URL
 
 To use:
 

@@ -153,6 +153,78 @@ The plugin will automatically:
 
 **Note**: Parameters defined in the template with default values will be used automatically. You only need to provide parameters in `plugin.parameters` if you want to override the defaults or if the parameter is required.
 
+### Using Remote Templates
+
+The plugin supports templates from remote URLs. Use the `TEMPLATE_NAME` environment variable to specify a remote template:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: remote-template-app
+spec:
+  source:
+    repoURL: https://github.com/myorg/myrepo
+    path: .
+    plugin:
+      name: openshift-template-processor-simple-v1.0
+      env:
+        - name: TEMPLATE_NAME
+          value: https://raw.githubusercontent.com/redhat-cop/openshift-templates/master/nexus/nexus-deployment-template.yml
+      parameters:
+        - name: APP_NAME
+          string: nexus
+        - name: APP_NAMESPACE
+          string: default
+```
+
+The plugin will automatically download the template from the URL and process it.
+
+### Using Parameter Files
+
+You can also load parameters from a file in your repository using the `PARAM_FILE` environment variable:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-with-params-file
+spec:
+  source:
+    repoURL: https://github.com/jonmosco/openshift-template-argocd-cmp/examples/openshift
+    path: .
+    plugin:
+      name: openshift-template-processor-simple-v1.0
+      env:
+        - name: PARAM_FILE
+          value: app.params
+      parameters:
+        - name: APP_NAME
+          string: my-app
+        - name: APP_NAMESPACE
+          string: default
+```
+
+The parameter file should be in `KEY=VALUE` format:
+```
+REPLICAS=3
+IMAGE=nginx:1.21
+ENVIRONMENT=production
+```
+
+Parameters from the file will be merged with parameters from `plugin.parameters` (environment variables take precedence).
+
+### Template Source Priority
+
+The plugin determines the template source in the following order:
+
+1. **TEMPLATE_NAME environment variable** - If set, uses this (can be URL or local path)
+2. **Auto-discovery** - Searches for templates in the repository:
+   - `./template.yaml` or `./template.yml` in current directory
+   - Any YAML file with `kind: Template` in current directory
+   - Files in `./openshift/` directory
+   - Broader search for template files
+
 ## Requirements
 
 - The plugin requires the `oc` command-line tool to be installed in the container image.

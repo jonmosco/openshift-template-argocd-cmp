@@ -17,41 +17,80 @@ data:
         args:
           - |
             set -e
- 
-            # Find OpenShift template files
-            # Check current directory first, then look for openshift/ subdirectory
+
+            # Determine template source
+            # Priority: 1) TEMPLATE_NAME env var (URL or local path), 2) Auto-discovery
             TEMPLATE_FILE=""
-            # First, check for template.yaml/template.yml in current directory
-            if [ -f "./template.yaml" ]; then
-              TEMPLATE_FILE="./template.yaml"
-            elif [ -f "./template.yml" ]; then
-              TEMPLATE_FILE="./template.yml"
+            
+            # Check if TEMPLATE_NAME is specified (can be URL or local path)
+            if [ -n "$TEMPLATE_NAME" ]; then
+              # Check if it's a URL (starts with http:// or https://)
+              if echo "$TEMPLATE_NAME" | grep -qE '^https?://'; then
+                echo "Downloading remote template from: $TEMPLATE_NAME" >&2
+                TEMPLATE_FILE="/tmp/remote-template.yaml"
+                curl -sfL "$TEMPLATE_NAME" -o "$TEMPLATE_FILE" || {
+                  echo "Error: Failed to download template from $TEMPLATE_NAME" >&2
+                  exit 1
+                }
+              else
+                # It's a local path
+                if [ -f "$TEMPLATE_NAME" ]; then
+                  TEMPLATE_FILE="$TEMPLATE_NAME"
+                else
+                  echo "Error: Template file not found: $TEMPLATE_NAME" >&2
+                  exit 1
+                fi
+              fi
             fi
-            # If not found, check for any YAML file with Template kind in current directory
+
+            # If TEMPLATE_NAME not specified, use auto-discovery
             if [ -z "$TEMPLATE_FILE" ]; then
-              TEMPLATE_FILE=$(find . -maxdepth 1 -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
-            fi
-            # If still not found, check for openshift/ subdirectory
-            if [ -z "$TEMPLATE_FILE" ] && [ -d "./openshift" ]; then
-              TEMPLATE_FILE=$(find ./openshift -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -1)
-            fi
-            # search more broadly
-            if [ -z "$TEMPLATE_FILE" ]; then
-              TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
+              # First, check for template.yaml/template.yml in current directory
+              if [ -f "./template.yaml" ]; then
+                TEMPLATE_FILE="./template.yaml"
+              elif [ -f "./template.yml" ]; then
+                TEMPLATE_FILE="./template.yml"
+              fi
+              # If not found, check for any YAML file with Template kind in current directory
+              if [ -z "$TEMPLATE_FILE" ]; then
+                TEMPLATE_FILE=$(find . -maxdepth 1 -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
+              fi
+              # If still not found, check for openshift/ subdirectory
+              if [ -z "$TEMPLATE_FILE" ] && [ -d "./openshift" ]; then
+                TEMPLATE_FILE=$(find ./openshift -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | head -1)
+              fi
+              # Last resort: search more broadly
+              if [ -z "$TEMPLATE_FILE" ]; then
+                TEMPLATE_FILE=$(find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1)
+              fi
             fi
 
             if [ -z "$TEMPLATE_FILE" ]; then
-              echo "Error: No OpenShift template files found. Looking for files in ./openshift/ or named template.yaml" >&2
+              echo "Error: No OpenShift template files found. Looking for files in ./openshift/ or named template.yaml, or set TEMPLATE_NAME env var" >&2
               exit 1
             fi
 
             echo "Processing template: $TEMPLATE_FILE" >&2
 
-            # Build parameter list from environment variables
-            # ArgoCD passes plugin.parameters as environment variables
-            # Note: oc process will automatically use default values from the template
-            # for any parameters not explicitly provided here
+            # Build parameter list
+            # Priority: 1) PARAM_FILE (if specified), 2) Environment variables
             PARAMS=""
+
+            # Load parameters from file if PARAM_FILE is specified
+            if [ -n "$PARAM_FILE" ] && [ -f "$PARAM_FILE" ]; then
+              echo "Loading parameters from file: $PARAM_FILE" >&2
+              # Read parameter file and add each parameter
+              while IFS='=' read -r key value || [ -n "$key" ]; do
+                # Skip empty lines and comments
+                [ -z "$key" ] && continue
+                [ "${key#\#}" != "$key" ] && continue
+                # Remove quotes if present
+                value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+                if [ -n "$key" ] && [ -n "$value" ]; then
+                  PARAMS="$PARAMS -p $key=$value"
+                fi
+              done < "$PARAM_FILE"
+            fi
 
             # Include ArgoCD standard variables
             [ -n "$ARGOCD_APP_NAME" ] && PARAMS="$PARAMS -p APP_NAME=$ARGOCD_APP_NAME"
@@ -59,8 +98,9 @@ data:
 
             # Include plugin parameters from environment
             # Look for variables that are likely template parameters (uppercase, not internal)
+            # Exclude TEMPLATE_NAME and PARAM_FILE from being passed as template parameters
             # Only pass non-empty values - oc process will use template defaults for missing params
-            for VAR in $(env | cut -d= -f1 | grep -E '^[A-Z][A-Z0-9_]*$' | grep -vE '^(ARGOCD_|PATH|HOME|USER|SHELL|PWD|SHLVL|_|APP_NAME|APP_NAMESPACE)$'); do
+            for VAR in $(env | cut -d= -f1 | grep -E '^[A-Z][A-Z0-9_]*$' | grep -vE '^(ARGOCD_|PATH|HOME|USER|SHELL|PWD|SHLVL|_|APP_NAME|APP_NAMESPACE|TEMPLATE_NAME|PARAM_FILE)$'); do
               eval VALUE=\$$VAR
               if [ -n "$VALUE" ]; then
                 PARAMS="$PARAMS -p $VAR=$VALUE"
