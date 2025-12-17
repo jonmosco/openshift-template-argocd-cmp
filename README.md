@@ -1,6 +1,7 @@
 # ArgoCD Configuration Management plugin for OpenShift Templates
 
-An ArgoCD Configuration Management Plugin for processing OpenShift templates. This plugin provides basic template rendering for standard OpenShift template files.
+An ArgoCD Configuration Management Plugin (CMP) for processing OpenShift Templates.
+This plugin discovers template files, processes them using the oc CLI, and outputs a stream of valid Kubernetes/OpenShift manifests.
 
 ## Overview
 
