@@ -13,9 +13,9 @@ This plugin:
 
 ## OpenShift Templates
 
-Argo CD doesn't care how the YAML is produced; it only cares that the final result sent to stdout is a valid stream of Kubernetes manifests.
+ArgoCD only requires that plugins output valid manifests to stdout.
 
-The plugin looks for OpenShift template files in the following locations:
+This plugin identifies OpenShift templates in:
 - Files in `./openshift/` directory
 - Files named `template.yaml` or `template.yml` in the root or subdirectories
 - Any YAML file containing `kind: Template` or `apiVersion: template.openshift.io/v1`
