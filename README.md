@@ -79,18 +79,18 @@ The plugin requires a container image containing the `oc` binary. The version of
 Build the image using Podman:
 
 ```bash
-# Build with default OpenShift version (4.15.0)
+# Build with default OpenShift version (4.19.0)
 podman build -t argocd-openshift-template-processor-simple:1.0 .
 
 # Build for a specific OpenShift version
 podman build \
-  --build-arg OPENSHIFT_VERSION=4.15.0 \
+  --build-arg OPENSHIFT_VERSION=4.19.0 \
   -t argocd-openshift-template-processor-simple:1.0 \
   -f Dockerfile .
 
 # Build and tag for a container registry
 podman build \
-  --build-arg OPENSHIFT_VERSION=4.15.0 \
+  --build-arg OPENSHIFT_VERSION=4.19.0 \
   -t quay.io/myorg/argocd-openshift-template-processor-simple:1.0 \
   -f Dockerfile .
 

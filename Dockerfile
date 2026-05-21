@@ -15,8 +15,8 @@ RUN microdnf install -y \
 
 # Set OpenShift version as build argument
 # Default to a recent stable version if not specified
-# Use format like "4.14.0", "4.15.1", or "stable-4.15" for stable branches
-ARG OPENSHIFT_VERSION=4.14.0
+# Use format like "4.19.0", "4.19.1", or "stable-4.19" for stable branches
+ARG OPENSHIFT_VERSION=4.19.0
 
 # Download and install oc binary
 # The oc binary is available from the OpenShift client tools release
