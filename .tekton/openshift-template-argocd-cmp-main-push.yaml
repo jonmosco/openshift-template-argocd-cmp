@@ -11,9 +11,9 @@ metadata:
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: openshift-template-argocd-cmp
-    appstudio.openshift.io/component: openshift-template-argocd-cmp-master
+    appstudio.openshift.io/component: openshift-template-argocd-cmp-main
     pipelines.appstudio.openshift.io/type: build
-  name: openshift-template-argocd-cmp-master-on-push
+  name: openshift-template-argocd-cmp-main-on-push
   namespace: app-sre-tenant
 spec:
   params:
@@ -22,7 +22,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/app-sre-tenant/openshift-template-argocd-cmp/openshift-template-argocd-cmp-master:{{revision}}
+    value: quay.io/redhat-user-workloads/app-sre-tenant/openshift-template-argocd-cmp/openshift-template-argocd-cmp-main:{{revision}}
   - name: dockerfile
     value: Dockerfile
   - name: path-context
@@ -37,7 +37,7 @@ spec:
       value: pipelines/multi-arch-build-pipeline.yaml
     resolver: git
   taskRunTemplate:
-    serviceAccountName: build-pipeline-openshift-template-argocd-cmp-master
+    serviceAccountName: build-pipeline-openshift-template-argocd-cmp-main
   workspaces:
   - name: workspace
     volumeClaimTemplate:
