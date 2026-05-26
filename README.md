@@ -6,7 +6,8 @@ This plugin discovers template files, processes them using the oc CLI, and outpu
 ## Overview
 
 This plugin:
-- Discovers OpenShift template files in your repository
+- Discovers all OpenShift template files in your repository
+- Supports multiple templates per repository, processing each one automatically
 - Processes them using the `oc` command-line tool
 - Passes parameters from ArgoCD Application configuration
 - Generates standard Kubernetes/OpenShift manifests
@@ -15,10 +16,9 @@ This plugin:
 
 ArgoCD only requires that plugins output valid manifests to stdout.
 
-This plugin identifies OpenShift templates in:
-- Files in `./openshift/` directory
-- Files named `template.yaml` or `template.yml` in the root or subdirectories
-- Any YAML file containing `kind: Template` or `apiVersion: template.openshift.io/v1`
+The plugin automatically discovers **all** OpenShift templates in the repository by scanning for any YAML file containing `kind: Template` or `apiVersion: template.openshift.io/v1`. This includes files in subdirectories like `./openshift/`.
+
+When multiple templates are found, each is processed independently with the same set of parameters. The `--ignore-unknown-parameters` flag ensures that parameters not referenced by a given template are silently ignored.
 
 Example template:
 
@@ -146,11 +146,12 @@ spec:
 ```
 
 The plugin will automatically:
-- Discover template files in your repository
+- Discover all template files in your repository
+- Process each template independently
 - Pass `APP_NAME` and `APP_NAMESPACE` from ArgoCD
 - Pass any parameters you specify in `spec.source.plugin.parameters`
 - Use default values from the template for parameters not explicitly provided
-- Process the template with `oc process`
+- Process each template with `oc process`
 
 **Note**: Parameters defined in the template with default values will be used automatically. You only need to provide parameters in `plugin.parameters` if you want to override the defaults or if the parameter is required.
 
@@ -219,12 +220,24 @@ Parameters from the file will be merged with parameters from `plugin.parameters`
 
 The plugin determines the template source in the following order:
 
-1. **TEMPLATE_NAME environment variable** - If set, uses this (can be URL or local path)
-2. **Auto-discovery** - Searches for templates in the repository:
-   - `./template.yaml` or `./template.yml` in current directory
-   - Any YAML file with `kind: Template` in current directory
-   - Files in `./openshift/` directory
-   - Broader search for template files
+1. **TEMPLATE_NAME environment variable** - If set, uses this single template (can be URL or local path)
+2. **Auto-discovery** - Finds **all** YAML files in the repository containing `kind: Template` or `apiVersion: template.openshift.io/v1`, including subdirectories
+
+### Multiple Templates
+
+Repositories can contain multiple OpenShift templates. For example:
+
+```
+myrepo/
+  openshift/
+    deployment-template.yaml    # Deployment, Service, ConfigMap
+    cronjob-template.yaml       # CronJob for batch processing
+    monitoring-template.yaml    # PrometheusRule, ServiceMonitor
+```
+
+The plugin discovers and processes all of them in a single ArgoCD Application. Each template receives the same parameters; parameters not referenced by a template are silently ignored via `--ignore-unknown-parameters`.
+
+To process only a specific template, set the `TEMPLATE_NAME` environment variable in the ArgoCD Application spec.
 
 ## Requirements
 
