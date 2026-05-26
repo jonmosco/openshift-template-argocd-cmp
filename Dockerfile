@@ -32,11 +32,13 @@ RUN OPENSHIFT_VERSION=${OPENSHIFT_VERSION} && \
     oc version --client && \
     echo "oc client installed successfully"
 
-# Set up non-root user for security
-RUN groupadd -r argocd -g 999 && \
-    useradd -r -u 999 -g argocd -m -d /home/argocd -s /bin/bash argocd
+# Set up home directory compatible with OpenShift arbitrary UIDs
+# OpenShift runs containers with an arbitrary UID in GID 0 (root group)
+RUN mkdir -p /home/argocd/cmp-server/config && \
+    chgrp -R 0 /home/argocd && \
+    chmod -R g=u /home/argocd
 
-USER argocd
+USER 1001
 WORKDIR /home/argocd
 
 # Default command (will be overridden by ArgoCD)

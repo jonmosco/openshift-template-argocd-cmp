@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1beta1
+kind: ArgoCD
+metadata:
+  name: argocd
+spec:
+  repo:
+    sidecarContainers:
+      - name: openshift-template-processor
+        command: [/var/run/argocd/argocd-cmp-server]
+        image: quay.io/redhat-user-workloads/app-sre-tenant/openshift-template-argocd-cmp-main/openshift-template-argocd-cmp-main:1082bcb7159a7180b11256779f974d7506322a6e
+        securityContext:
+          runAsNonRoot: true
+        volumeMounts:
+          - mountPath: /var/run/argocd
+            name: var-files
+          - mountPath: /home/argocd/cmp-server/plugins
+            name: plugins
+          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+            subPath: plugin.yaml
+            name: openshift-template-processor-config
+          - mountPath: /tmp
+            name: cmp-tmp
+    volumes:
+      - name: openshift-template-processor-config
+        configMap:
+          name: openshift-template-processor
+      - name: cmp-tmp
+        emptyDir: {}
