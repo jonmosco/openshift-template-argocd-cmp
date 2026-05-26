@@ -86,7 +86,20 @@ data:
             echo "$TEMPLATE_FILES" | while read -r TEMPLATE_FILE; do
               [ -z "$TEMPLATE_FILE" ] && continue
               echo "Processing template: $TEMPLATE_FILE" >&2
-              oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml | sed 's/replicas: "\(.*\)"/replicas: \1/'
+              oc process --local --ignore-unknown-parameters -f "$TEMPLATE_FILE" $PARAMS -o yaml \
+                | sed 's/replicas: "\(.*\)"/replicas: \1/' \
+                | awk '{
+                    if (/^  metadata:/) {
+                      print; in_meta=1; added=0; next
+                    }
+                    if (in_meta && /^    annotations:/) {
+                      print; print "      argocd.argoproj.io/sync-options: Validate=false"; in_meta=0; added=1; next
+                    }
+                    if (in_meta && /^    [a-zA-Z]/ && !added) {
+                      print "    annotations:"; print "      argocd.argoproj.io/sync-options: Validate=false"; in_meta=0; added=1
+                    }
+                    print
+                  }'
             done
 
       discover:
