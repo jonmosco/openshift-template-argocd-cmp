@@ -11,7 +11,19 @@ data:
     spec:
       version: v1.0
       init:
-        command: [sh, -c, 'echo "Initializing OpenShift template processor..."']
+        command: [sh, -c]
+        args:
+          - |
+            echo "Initializing OpenShift template processor..." >&2
+            # Rewrite legacy apiVersion: v1 to template.openshift.io/v1 for templates.
+            # oc 4.17+ removed the legacy v1 scheme for local processing (OCPBUGS-32108).
+            find . -type f \( -name "*.yaml" -o -name "*.yml" \) \
+              -exec grep -l "kind: Template" {} \; 2>/dev/null | while read -r f; do
+              if grep -q "^apiVersion: v1" "$f" && ! grep -q "template.openshift.io" "$f"; then
+                sed -i 's/^apiVersion: v1$/apiVersion: template.openshift.io\/v1/' "$f"
+                echo "  Rewrote legacy apiVersion in: $f" >&2
+              fi
+            done
       generate:
         command: [sh, -c]
         args:
@@ -104,6 +116,6 @@ data:
 
       discover:
         find:
-          glob: "**/template.yaml"
+          glob: "**/*template*.yaml"
           command: [sh, -c, 'find . -type f \( -name "*.yaml" -o -name "*.yml" \) -exec grep -l -E "(kind.*Template|apiVersion.*template\.openshift\.io/v1)" {} \; 2>/dev/null | head -1']
 

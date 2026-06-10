@@ -1,8 +1,8 @@
-# Dockerfile for ArgoCD OpenShift Template Processor Plugin (Simple)
+# Dockerfile for ArgoCD OpenShift Template Processor Plugin
 # This image contains the oc binary for processing OpenShift templates
 #
 # Build with:
-#   podman build --build-arg OPENSHIFT_VERSION=4.15.0 -t argocd-openshift-template-processor-simple:1.0 .
+#   podman build --build-arg OPENSHIFT_VERSION=4.15.0 -t argocd-openshift-template-processor:1.0 .
 
 ARG BASE_IMAGE=registry.access.redhat.com/ubi9-minimal:latest
 FROM ${BASE_IMAGE}
