@@ -7,7 +7,7 @@ spec:
     sidecarContainers:
       - name: openshift-template-processor
         command: [/var/run/argocd/argocd-cmp-server]
-        image: quay.io/redhat-user-workloads/app-sre-tenant/openshift-template-argocd-cmp-main/openshift-template-argocd-cmp-main:1082bcb7159a7180b11256779f974d7506322a6e
+        image: quay.io/redhat-user-workloads/app-sre-tenant/openshift-template-argocd-cmp-main/openshift-template-argocd-cmp-main:22bc41199e9d90f68757a5a7122604e492225f28
         securityContext:
           runAsNonRoot: true
         volumeMounts:
